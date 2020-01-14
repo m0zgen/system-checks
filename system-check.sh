@@ -12,6 +12,7 @@ SCRIPT_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
 HOSTNAME=`hostname`
 SERVER_IP=`hostname -I`
 MOUNT=$(mount|egrep -iw "ext4|ext3|xfs|gfs|gfs2|btrfs"|grep -v "loop"|sort -u -t' ' -k1,2)
+FS_USAGE=$(df -PTh|egrep -iw "ext4|ext3|xfs|gfs|gfs2|btrfs"|grep -v "loop"|sort -k6n|awk '!seen[$1]++')
 SERVICES="$SCRIPT_PATH/services-list.txt"
 
 on_success="DONE"
@@ -22,6 +23,10 @@ red="\e[1;31m"
 purple="\033[1;35m"
 nc="\e[0m"
 
+SuccessMark="\e[47;32m ------ OK \e[0m"
+WarningMark="\e[43;31m ------ WARNING \e[0m"
+CriticalMark="\e[47;31m ------ CRITICAL \e[0m"
+d="-------------------------------------"
 
 Info() {
 	echo -en "${1}${green}${2}${nc}\n"
@@ -43,8 +48,8 @@ Splash() {
 	echo -en "${white}${1}${nc}\n"
 }
 
-space() {
-	echo -e "\n"
+space() { 
+	echo -e ""
 }
 
 # Functions
@@ -136,8 +141,8 @@ confirm() {
 
 # Actions
 # ---------------------------------------------------\
-
-Splash "-------------------------------System Information----------------------------"
+space
+Splash "-------------------------------\t\tSystem Information\t----------------------------"
 checkDistro
 Info "Hostname:\t\t" $HOSTNAME
 Info "Distro:\t\t\t" $DISTR
@@ -150,27 +155,58 @@ Info "Kernel:\t\t\t" `uname -r`
 Info "Architecture:\t\t" `arch`
 Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
 
-Splash "\n\n-------------------------------CPU/Memory Usage------------------------------"
+Splash "\n\n-------------------------------\t\tCPU/Memory Usage\t------------------------------"
 Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
 Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
 Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
 echo ""
 
-Splash "\n\n-------------------------------Boot Information------------------------------"
+Splash "\n\n-------------------------------\t\tBoot Information\t------------------------------"
 Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
 Info "Uptime (hours/mins):\t" `uptime | awk '{print $3}' | sed 's/,//'`
 echo -en "Last Reboot:\t\t${green}$(who -b | awk '{print $3,$4,$5}')${nc}"
 
-Splash "\n\n-------------------------------Last 3 Reboot Info------------------------------"
+Splash "\n\n-------------------------------\t\tLast 3 Reboot Info\t------------------------------"
 last reboot | head -3
 
-Splash "\n\n-------------------------------Mount Information------------------------------"
+Splash "\n\n-------------------------------\t\tMount Information\t------------------------------"
 echo -en "$MOUNT"|column -t
 
-Splash "\n\n-------------------------------Read-only mounted------------------------------"
+Splash "\n\n-------------------------------\t\tDisk usage\t\t------------------------------"
+echo -e "( 0-90% = OK/HEALTHY, 90-95% = WARNING, 95-100% = CRITICAL )"
+echo -e "$d$d"
+echo -e "Mounted File System[s] Utilization (Percentage Used):\n"
+
+COL1=$(echo "$FS_USAGE"|awk '{print $1 " "$7}')
+COL2=$(echo "$FS_USAGE"|awk '{print $6}'|sed -e 's/%//g')
+
+for i in $(echo "$COL2"); do
+{
+  if [ $i -ge 95 ]; then
+    COL3="$(echo -e $i"% $CriticalMark\n$COL3")"
+  elif [[ $i -ge 90 && $i -lt 95 ]]; then
+    COL3="$(echo -e $i"% $WarningMark\n$COL3")"
+  else
+    COL3="$(echo -e $i"% $SuccessMark\n$COL3")"
+  fi
+}
+done
+COL3=$(echo "$COL3"|sort -k1n)
+paste  <(echo "$COL1") <(echo "$COL3") -d' '|column -t
+
+Splash "\n\n-------------------------------\t\tRead-only mounted\t------------------------------"
 echo "$MOUNT"|grep -w \(ro\) && Info "\n.....Read Only file system[s] found"|| Info "No read-only file system[s] found. "
 
-Splash "\n\n-------------------------------Services state------------------------------"
+Splash "\n\n-------------------------------\t\tCurren average\t\t------------------------------"
+echo -en "Current Load Average:\t ${green}$(uptime|grep -o "load average.*"|awk '{print $3" " $4" " $5}')${nc}"
+
+Splash "\n\n-------------------------------\t\tTop 5 memory usage\t------------------------------"
+ps -eo pmem,pcpu,pid,ppid,user,stat,args | sort -k 1 -r | head -6
+
+Splash "\n\n-------------------------------\t\tTop 5 CPU usage\t\t------------------------------"
+ps -eo pcpu,pmem,pid,ppid,user,stat,args | sort -k 1 -r | head -6
+
+Splash "\n\n-------------------------------\t\tServices state\t\t------------------------------"
 
 # Read data from list.txt
 while read -r service; do
@@ -186,7 +222,11 @@ while read -r service; do
 
 done < $SERVICES
 
+space
 if confirm "List all running services?"; then
 	Splash "\n\n-------------------------------Running services------------------------------"
 	systemctl list-units | grep running
 fi
+
+
+
