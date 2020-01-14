@@ -163,8 +163,8 @@ echo ""
 
 Splash "\n\n-------------------------------\t\tBoot Information\t------------------------------"
 Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
-Info "Uptime (hours/mins):\t" `uptime | awk '{print $3}' | sed 's/,//'`
 echo -en "Last Reboot:\t\t${green}$(who -b | awk '{print $3,$4,$5}')${nc}"
+echo -en "\nUptime:\t\t\t>${green}$(uptime)${nc}"
 
 Splash "\n\n-------------------------------\t\tLast 3 Reboot Info\t------------------------------"
 last reboot | head -3
