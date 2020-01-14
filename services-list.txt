@@ -16,3 +16,4 @@ php-fpm
 httpd
 mariadb
 nscd
+wg-quick@wg0-server
