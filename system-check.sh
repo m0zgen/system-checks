@@ -159,14 +159,13 @@ Splash "\n\n-------------------------------\t\tCPU/Memory Usage\t---------------
 Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
 Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
 Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
-echo ""
 
 Splash "\n\n-------------------------------\t\tCPU Information\t------------------------------"
 Info "CPU MHz: " `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
 Info "Virtualization:" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
 Info "Hypervisor vendor: " `lscpu | grep -oP 'Hypervisor vendor:\s*\K.+'`
-Info "Vendor ID: " `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
-Info "Model name: " `lscpu | grep -oP 'Model name:\s*\K.+'`
+echo -en "Vendor ID:\t\t$(lscpu | grep -oP 'Vendor ID:\s*\K.+')${nc}"
+echo -en "Model name:\t\t${green}$(lscpu | grep -oP 'Model name:\s*\K.+')${nc}"
 
 
 Splash "\n\n-------------------------------\t\tBoot Information\t------------------------------"
