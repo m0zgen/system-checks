@@ -161,6 +161,14 @@ Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
 Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
 echo ""
 
+Splash "\n\n-------------------------------\t\tCPU Information\t------------------------------"
+Info "CPU MHz: " `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
+Info "Virtualization:" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
+Info "Hypervisor vendor: " `lscpu | grep -oP 'Hypervisor vendor:\s*\K.+'`
+Info "Vendor ID: " `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
+Info "Model name: " `lscpu | grep -oP 'Model name:\s*\K.+'`
+
+
 Splash "\n\n-------------------------------\t\tBoot Information\t------------------------------"
 Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
 echo -en "Last Reboot:\t\t${green}$(who -b | awk '{print $3,$4,$5}')${nc}"
@@ -227,6 +235,3 @@ if confirm "List all running services?"; then
 	Splash "\n\n-------------------------------Running services------------------------------"
 	systemctl list-units | grep running
 fi
-
-
-
