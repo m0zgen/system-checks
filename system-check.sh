@@ -164,7 +164,7 @@ Splash "\n\n-------------------------------\t\tCPU Information\t\t--------------
 Info "CPU MHz:\t\t" `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
 Info "Virtualization:\t\t" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
 Info "Hypervisor vendor:\t" `lscpu | grep -oP 'Hypervisor vendor:\s*\K.+'`
-echo -en "Vendor ID:\t\t${green}$(lscpu | grep -oP 'Vendor ID:\s*\K.+')${nc}"
+echo -en "Vendor ID:\t\t${green}$(lscpu | grep -oP 'Vendor ID:\s*\K.+')${nc}\n"
 echo -en "Model name:\t\t${green}$(lscpu | grep -oP 'Model name:\s*\K.+')${nc}"
 
 
