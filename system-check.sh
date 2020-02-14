@@ -161,7 +161,7 @@ Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
 Info "Free Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $4/$2*100}'`
 Info "Cached Memory:\t\t" `free | awk '/Mem/{printf("%.2f%"), $6/$2*100}'`
 Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
-echo -e "Memory in Mb:\t\t${green}$(free -m | grep Mem | awk '{print "Total: " $2 "Mb,", "Used: " $3 "Mb,", "Free: " $4"Mb,", "Buff/Cache: " $6"Mb,"}')${nc}"
+echo -e "Memory in Mb:\t\t${green}$(free -m | grep Mem | awk '{print "Total: " $2 "Mb,", "Used: " $3 "Mb,", "Free: " $4"Mb,", "Buff/Cache: " $6"Mb"}')${nc}"
 
 
 Splash "\n\n-------------------------------\t\tCPU Information\t\t------------------------------"
