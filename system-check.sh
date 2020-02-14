@@ -6,6 +6,10 @@
 # -------------------------------------------------------------------------------------------\
 PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 SCRIPT_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
+ME=`basename "$0"`
+
+# POSIX / Reset in case getopts has been used previously in the shell.
+OPTIND=1
 
 # Notify in colors
 # ---------------------------------------------------\
@@ -139,102 +143,141 @@ confirm() {
     esac
 }
 
+get_all_svcs(){
+	if confirm "List all running services?"; then
+		Splash "\n\n-------------------------------Running services------------------------------"
+		systemctl list-units | grep running
+	fi
+}
+
+usage(){
+	Info "You can use this script with argument:"
+	echo -e "$ME --all"
+	space
+}
+
 # Actions
 # ---------------------------------------------------\
-space
-Splash "-------------------------------\t\tSystem Information\t----------------------------"
-checkDistro
-Info "Hostname:\t\t" $HOSTNAME
-Info "Distro:\t\t\t" $DISTR
-Info "IP:\t\t\t" $SERVER_IP
 
-isRoot
-isSELinux
+get_info(){
 
-Info "Kernel:\t\t\t" `uname -r`
-Info "Architecture:\t\t" `arch`
-Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
+	space
+	Splash "-------------------------------\t\tSystem Information\t----------------------------"
+	checkDistro
+	Info "Hostname:\t\t" $HOSTNAME
+	Info "Distro:\t\t\t" $DISTR
+	Info "IP:\t\t\t" $SERVER_IP
 
-Splash "\n\n-------------------------------\t\tCPU/Memory Usage\t------------------------------"
-Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
-Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
-Info "Free Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $4/$2*100}'`
-Info "Cached Memory:\t\t" `free | awk '/Mem/{printf("%.2f%"), $6/$2*100}'`
-Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
-echo -e "Memory in Mb:\t\t${green}$(free -m | grep Mem | awk '{print "Total: " $2 "Mb,", "Used: " $3 "Mb,", "Free: " $4"Mb,", "Buff/Cache: " $6"Mb"}')${nc}"
+	isRoot
+	isSELinux
 
+	Info "Kernel:\t\t\t" `uname -r`
+	Info "Architecture:\t\t" `arch`
+	Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
 
-Splash "\n\n-------------------------------\t\tCPU Information\t\t------------------------------"
-Info "CPU MHz:\t\t" `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
-Info "Virtualization:\t\t" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
-Info "Hypervisor vendor:\t" `lscpu | grep -oP 'Hypervisor vendor:\s*\K.+'`
-echo -en "Vendor ID:\t\t${green}$(lscpu | grep -oP 'Vendor ID:\s*\K.+')${nc}\n"
-echo -en "Model name:\t\t${green}$(lscpu | grep -oP 'Model name:\s*\K.+')${nc}"
+	Splash "\n\n-------------------------------\t\tCPU/Memory Usage\t------------------------------"
+	Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
+	Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
+	Info "Free Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $4/$2*100}'`
+	Info "Cached Memory:\t\t" `free | awk '/Mem/{printf("%.2f%"), $6/$2*100}'`
+	Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
+	echo -e "Memory in Mb:\t\t${green}$(free -m | grep Mem | awk '{print "Total: " $2 "Mb,", "Used: " $3 "Mb,", "Free: " $4"Mb,", "Buff/Cache: " $6"Mb"}')${nc}"
 
 
-Splash "\n\n-------------------------------\t\tBoot Information\t------------------------------"
-Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
-echo -en "Last Reboot:\t\t${green}$(who -b | awk '{print $3,$4,$5}')${nc}"
-echo -en "\nUptime:\t\t\t>${green}$(uptime)${nc}"
+	Splash "\n\n-------------------------------\t\tCPU Information\t\t------------------------------"
+	Info "CPU MHz:\t\t" `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
+	Info "Virtualization:\t\t" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
+	Info "Hypervisor vendor:\t" `lscpu | grep -oP 'Hypervisor vendor:\s*\K.+'`
+	echo -en "Vendor ID:\t\t${green}$(lscpu | grep -oP 'Vendor ID:\s*\K.+')${nc}\n"
+	echo -en "Model name:\t\t${green}$(lscpu | grep -oP 'Model name:\s*\K.+')${nc}"
 
-Splash "\n\n-------------------------------\t\tLast 3 Reboot Info\t------------------------------"
-last reboot | head -3
 
-Splash "\n\n-------------------------------\t\tMount Information\t------------------------------"
-echo -en "$MOUNT"|column -t
+	Splash "\n\n-------------------------------\t\tBoot Information\t------------------------------"
+	Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
+	echo -en "Last Reboot:\t\t${green}$(who -b | awk '{print $3,$4,$5}')${nc}"
+	echo -en "\nUptime:\t\t\t>${green}$(uptime)${nc}"
 
-Splash "\n\n-------------------------------\t\tDisk usage\t\t------------------------------"
-echo -e "( 0-90% = OK/HEALTHY, 90-95% = WARNING, 95-100% = CRITICAL )"
-echo -e "$d$d"
-echo -e "Mounted File System[s] Utilization (Percentage Used):\n"
+	Splash "\n\n-------------------------------\t\tLast 3 Reboot Info\t------------------------------"
+	last reboot | head -3
 
-COL1=$(echo "$FS_USAGE"|awk '{print $1 " "$7}')
-COL2=$(echo "$FS_USAGE"|awk '{print $6}'|sed -e 's/%//g')
+	Splash "\n\n-------------------------------\t\tMount Information\t------------------------------"
+	echo -en "$MOUNT"|column -t
 
-for i in $(echo "$COL2"); do
-{
-  if [ $i -ge 95 ]; then
-    COL3="$(echo -e $i"% $CriticalMark\n$COL3")"
-  elif [[ $i -ge 90 && $i -lt 95 ]]; then
-    COL3="$(echo -e $i"% $WarningMark\n$COL3")"
-  else
-    COL3="$(echo -e $i"% $SuccessMark\n$COL3")"
-  fi
+	Splash "\n\n-------------------------------\t\tDisk usage\t\t------------------------------"
+	echo -e "( 0-90% = OK/HEALTHY, 90-95% = WARNING, 95-100% = CRITICAL )"
+	echo -e "$d$d"
+	echo -e "Mounted File System[s] Utilization (Percentage Used):\n"
+
+	COL1=$(echo "$FS_USAGE"|awk '{print $1 " "$7}')
+	COL2=$(echo "$FS_USAGE"|awk '{print $6}'|sed -e 's/%//g')
+
+	for i in $(echo "$COL2"); do
+	{
+	  if [ $i -ge 95 ]; then
+	    COL3="$(echo -e $i"% $CriticalMark\n$COL3")"
+	  elif [[ $i -ge 90 && $i -lt 95 ]]; then
+	    COL3="$(echo -e $i"% $WarningMark\n$COL3")"
+	  else
+	    COL3="$(echo -e $i"% $SuccessMark\n$COL3")"
+	  fi
+	}
+	done
+	COL3=$(echo "$COL3"|sort -k1n)
+	paste  <(echo "$COL1") <(echo "$COL3") -d' '|column -t
+
+	Splash "\n\n-------------------------------\t\tRead-only mounted\t------------------------------"
+	echo "$MOUNT"|grep -w \(ro\) && Info "\n.....Read Only file system[s] found"|| Info "No read-only file system[s] found. "
+
+	Splash "\n\n-------------------------------\t\tCurren average\t\t------------------------------"
+	echo -en "Current Load Average:\t ${green}$(uptime|grep -o "load average.*"|awk '{print $3" " $4" " $5}')${nc}"
+
+	Splash "\n\n-------------------------------\t\tTop 5 memory usage\t------------------------------"
+	ps -eo pmem,pcpu,pid,ppid,user,stat,args | sort -k 1 -r | head -6
+
+	Splash "\n\n-------------------------------\t\tTop 5 CPU usage\t\t------------------------------"
+	ps -eo pcpu,pmem,pid,ppid,user,stat,args | sort -k 1 -r | head -6
+
+	Splash "\n\n-------------------------------\t\tServices state\t\t------------------------------"
+
+	# Read data from list.txt
+	while read -r service; do
+
+		# Cut comment lines
+	    if [[ -n "$service" && "$service" != [[:blank:]#]* ]]; then
+	    	if chk_SvcExist $service; then
+				chk_SvsStatus $service
+			else
+				Warn "$service " "Not installed"
+			fi
+	    fi
+
+	done < $SERVICES
+
 }
-done
-COL3=$(echo "$COL3"|sort -k1n)
-paste  <(echo "$COL1") <(echo "$COL3") -d' '|column -t
-
-Splash "\n\n-------------------------------\t\tRead-only mounted\t------------------------------"
-echo "$MOUNT"|grep -w \(ro\) && Info "\n.....Read Only file system[s] found"|| Info "No read-only file system[s] found. "
-
-Splash "\n\n-------------------------------\t\tCurren average\t\t------------------------------"
-echo -en "Current Load Average:\t ${green}$(uptime|grep -o "load average.*"|awk '{print $3" " $4" " $5}')${nc}"
-
-Splash "\n\n-------------------------------\t\tTop 5 memory usage\t------------------------------"
-ps -eo pmem,pcpu,pid,ppid,user,stat,args | sort -k 1 -r | head -6
-
-Splash "\n\n-------------------------------\t\tTop 5 CPU usage\t\t------------------------------"
-ps -eo pcpu,pmem,pid,ppid,user,stat,args | sort -k 1 -r | head -6
-
-Splash "\n\n-------------------------------\t\tServices state\t\t------------------------------"
-
-# Read data from list.txt
-while read -r service; do
-
-	# Cut comment lines
-    if [[ -n "$service" && "$service" != [[:blank:]#]* ]]; then
-    	if chk_SvcExist $service; then
-			chk_SvsStatus $service
-		else
-			Warn "$service " "Not installed"
-		fi
-    fi
-
-done < $SERVICES
 
 space
-if confirm "List all running services?"; then
-	Splash "\n\n-------------------------------Running services------------------------------"
-	systemctl list-units | grep running
-fi
+# get_info
+
+while true; do
+    case "$1" in
+        # -d|--debug)
+        #     d=y
+        #     shift
+        #     ;;
+        -a|--all)
+            get_info
+            get_all_svcs
+            exit 0
+            ;;
+        -h|--help)
+            usage
+            exit 1
+            ;;
+        *)
+            get_info
+            exit 0
+            ;;
+    esac
+done
+
+
