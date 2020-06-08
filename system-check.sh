@@ -127,6 +127,29 @@ chk_SvcExist() {
     fi
 }
 
+progressfilt ()
+{
+    local flag=false c count cr=$'\r' nl=$'\n'
+    while IFS='' read -d '' -rn 1 c
+    do
+        if $flag
+        then
+            printf '%s' "$c"
+        else
+            if [[ $c != $cr && $c != $nl ]]
+            then
+                count=0
+            else
+                ((count++))
+                if ((count > 1))
+                then
+                    flag=true
+                fi
+            fi
+        fi
+    done
+}
+
 # https://unix.stackexchange.com/questions/43875/sending-the-output-from-dd-to-awk-sed-grep
 # https://www.shellhacks.com/disk-speed-test-read-write-hdd-ssd-perfomance-linux/
 
@@ -235,10 +258,10 @@ ps -eo pmem,pcpu,pid,ppid,user,stat,args | sort -k 1 -r | head -6
 Splash "\n\n-------------------------------\t\tTop 5 CPU usage\t\t------------------------------"
 ps -eo pcpu,pmem,pid,ppid,user,stat,args | sort -k 1 -r | head -6
 
-Splash "\n\n-------------------------------\t\tSpeedtest\t------------------------------"
-echo -en "Washington, D.C. (east):\t\t${green}$(wget --output-document=/dev/null http://speedtest.wdc01.softlayer.com/downloads/test10.zip 2>&1 | grep -o "[0-9.]\+ [KM]*B/s")${nc}\n"
-echo -en "San Jose, California (west):\t\t${green}$(wget --output-document=/dev/null http://speedtest.sjc01.softlayer.com/downloads/test10.zip 2>&1 | grep -o "[0-9.]\+ [KM]*B/s")${nc}\n"
-echo -en "Frankfurt, DE, JP:\t\t\t${green}$(wget --output-document=/dev/null http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin 2>&1 | grep -o "[0-9.]\+ [KM]*B/s")${nc}\n"
+# Splash "\n\n-------------------------------\t\tSpeedtest\t------------------------------"
+# echo -en "Washington, D.C. (east):\t\t${green}$(wget --output-document=/dev/null http://speedtest.wdc01.softlayer.com/downloads/test10.zip 2>&1 | grep -o "[0-9.]\+ [KM]*B/s")${nc}\n"
+# echo -en "San Jose, California (west):\t\t${green}$(wget --output-document=/dev/null http://speedtest.sjc01.softlayer.com/downloads/test10.zip 2>&1 | grep -o "[0-9.]\+ [KM]*B/s")${nc}\n"
+# echo -en "Frankfurt, DE, JP:\t\t\t${green}$(wget --output-document=/dev/null http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin 2>&1 | grep -o "[0-9.]\+ [KM]*B/s")${nc}\n"
 
 Splash "\n\n-------------------------------\t\tServices state\t\t------------------------------"
 
