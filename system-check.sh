@@ -162,7 +162,14 @@ echo -en "Current Load Average:\t${green}$(uptime|grep -o "load average.*"|awk '
 
 Splash "\n\n-------------------------------\t\tUsage of CPU/Memory\t------------------------------"
 Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
-Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
+
+if free | awk '/^Swap:/ {exit !$2}'; then
+    Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
+else
+    Error "Swap Usage:\t\t" "swap does not exist"
+fi
+
+
 Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
 
 Splash "\n\n-------------------------------\t\tCPU Information\t\t------------------------------"
