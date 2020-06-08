@@ -7,6 +7,7 @@
 * Mount information
 * Disc IO speed (Read / Write)
 * Average information
+* Speedtest
 * Checking systemd services status
 
 ## Description
