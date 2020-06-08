@@ -14,6 +14,7 @@ SERVER_IP=`hostname -I`
 MOUNT=$(mount|egrep -iw "ext4|ext3|xfs|gfs|gfs2|btrfs"|grep -v "loop"|sort -u -t' ' -k1,2)
 FS_USAGE=$(df -PTh|egrep -iw "ext4|ext3|xfs|gfs|gfs2|btrfs"|grep -v "loop"|sort -k6n|awk '!seen[$1]++')
 SERVICES="$SCRIPT_PATH/services-list.txt"
+TESTFILE="$SCRIPT_PATH/tempfile"
 
 on_success="DONE"
 on_fail="FAIL"
@@ -75,7 +76,7 @@ checkDistro() {
 	if [ -e /etc/centos-release ]; then
 	    DISTRO=`cat /etc/redhat-release | awk '{print $1,$4}'`
 	elif [ -e /etc/fedora-release ]; then
-	    awk '{print ($1,$3~/^[0-9]/?$3:$4)}' /etc/redhat-release && return
+	    DISTRO=`cat /etc/fedora-release | awk '{print ($1,$3~/^[0-9]/?$3:$4)}'`
 	else
 	    Error "Your distribution is not supported (yet)"
 	    exit 1
@@ -126,20 +127,14 @@ chk_SvcExist() {
     fi
 }
 
-calc_disk() {
-    local total_size=0
-    local array=$@
-    for size in ${array[@]}
-    do
-        [ "${size}" == "0" ] && size_t=0 || size_t=`echo ${size:0:${#size}-1}`
-        [ "`echo ${size:(-1)}`" == "K" ] && size=0
-        [ "`echo ${size:(-1)}`" == "M" ] && size=$( awk 'BEGIN{printf "%.1f", '$size_t' / 1024}' )
-        [ "`echo ${size:(-1)}`" == "T" ] && size=$( awk 'BEGIN{printf "%.1f", '$size_t' * 1024}' )
-        [ "`echo ${size:(-1)}`" == "G" ] && size=${size_t}
-        total_size=$( awk 'BEGIN{printf "%.1f", '$total_size' + '$size'}' )
-    done
-    echo ${total_size}
+# https://unix.stackexchange.com/questions/43875/sending-the-output-from-dd-to-awk-sed-grep
+# https://www.shellhacks.com/disk-speed-test-read-write-hdd-ssd-perfomance-linux/
+chk_disk_write() {
+	dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}' 
+	rm -f $TESTFILE
 }
+
+chk_disk_write
 
 confirm() {
     # call with a prompt string or use a default
@@ -169,6 +164,7 @@ isSELinux
 Info "Kernel:\t\t\t" `uname -r`
 Info "Architecture:\t\t" `arch`
 Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
+echo -en "Current Load Average:\t${green}$(uptime|grep -o "load average.*"|awk '{print $3" " $4" " $5}')${nc}"
 
 Splash "\n\n-------------------------------\t\tUsage of CPU/Memory\t------------------------------"
 Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
@@ -186,10 +182,13 @@ Info "Virtualization:\t\t" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
 Splash "\n\n-------------------------------\t\tBoot Information\t------------------------------"
 Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
 echo -en "Last Reboot:\t\t${green}$(who -b | awk '{print $3,$4,$5}')${nc}"
-echo -en "\nUptime:\t\t\t>${green}$(uptime)${nc}"
+echo -en "\nUptime:\t\t\t${green}`awk '{a=$1/86400;b=($1%86400)/3600;c=($1%3600)/60} {printf("%d days, %d hour %d min\n",a,b,c)}' /proc/uptime`${nc}"
 
 Splash "\n\n-------------------------------\t\tLast 3 Reboot Info\t------------------------------"
 last reboot | head -3
+
+Splash "\n\n-------------------------------\t\tLast info\t------------------------------"
+last | head -9
 
 Splash "\n\n-------------------------------\t\tMount Information\t------------------------------"
 echo -en "$MOUNT"|column -t
@@ -216,11 +215,18 @@ done
 COL3=$(echo "$COL3"|sort -k1n)
 paste  <(echo "$COL1") <(echo "$COL3") -d' '|column -t
 
+Splash "\n\n-------------------------------\t\tTest disk IO\t------------------------------"
+echo -en "Write (1st):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
+echo -en "Write (2nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
+echo -en "Write (3nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
+echo ""
+echo -en "Read (1st):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
+echo -en "Read (2nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
+echo -en "Read (3nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
+rm -rf $TESTFILE
+
 Splash "\n\n-------------------------------\t\tRead-only mounted\t------------------------------"
 echo "$MOUNT"|grep -w \(ro\) && Info "\n.....Read Only file system[s] found"|| Info "No read-only file system[s] found. "
-
-Splash "\n\n-------------------------------\t\tCurren average\t\t------------------------------"
-echo -en "Current Load Average:\t ${green}$(uptime|grep -o "load average.*"|awk '{print $3" " $4" " $5}')${nc}"
 
 Splash "\n\n-------------------------------\t\tTop 5 memory usage\t------------------------------"
 ps -eo pmem,pcpu,pid,ppid,user,stat,args | sort -k 1 -r | head -6
