@@ -129,12 +129,6 @@ chk_SvcExist() {
 
 # https://unix.stackexchange.com/questions/43875/sending-the-output-from-dd-to-awk-sed-grep
 # https://www.shellhacks.com/disk-speed-test-read-write-hdd-ssd-perfomance-linux/
-chk_disk_write() {
-	dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}' 
-	rm -f $TESTFILE
-}
-
-chk_disk_write
 
 confirm() {
     # call with a prompt string or use a default
