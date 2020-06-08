@@ -5,6 +5,7 @@
 * Disk Usage
 * Last reboot info
 * Mount information
+* Disc IO speed (Read / Write)
 * Average information
 * Checking systemd services status
 
