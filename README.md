@@ -1,5 +1,7 @@
 ## System Checker script
 
+Works on this time only CentOS / Fedora
+
 * System info
 * CPU / Memory usage
 * Disk Usage
@@ -9,6 +11,11 @@
 * Average information
 * Speedtest
 * Checking systemd services status
+
+## Run directly
+```bash
+wget -O - https://raw.githubusercontent.com/m0zgen/system-checks/master/system-check.sh | bash
+```
 
 ## Description
 
