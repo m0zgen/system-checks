@@ -255,21 +255,25 @@ else
 	echo "Debug is enabled!"
 fi
 
-Splash "\n\n-------------------------------\t\tServices state\t\t------------------------------"
+if [[ -f $SERVICES ]]; then
 
-# Read data from list.txt
-while read -r service; do
+	Splash "\n\n-------------------------------\t\tServices state\t\t------------------------------"
 
-	# Cut comment lines
-    if [[ -n "$service" && "$service" != [[:blank:]#]* ]]; then
-    	if chk_SvcExist $service; then
-			chk_SvsStatus $service
-		else
-			Warn "$service " "Not installed"
-		fi
-    fi
+	# Read data from list.txt
+	while read -r service; do
 
-done < $SERVICES
+		# Cut comment lines
+	    if [[ -n "$service" && "$service" != [[:blank:]#]* ]]; then
+	    	if chk_SvcExist $service; then
+				chk_SvsStatus $service
+			else
+				Warn "$service " "Not installed"
+			fi
+	    fi
+
+	done < $SERVICES
+	
+fi
 
 space
 if confirm "List all running services? (y/n or enter)"; then
