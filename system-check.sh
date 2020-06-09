@@ -228,13 +228,13 @@ paste  <(echo "$COL1") <(echo "$COL3") -d' '|column -t
 # https://unix.stackexchange.com/questions/43875/sending-the-output-from-dd-to-awk-sed-grep
 # https://www.shellhacks.com/disk-speed-test-read-write-hdd-ssd-perfomance-linux/
 Splash "\n\n-------------------------------\t\tTest disk IO\t------------------------------"
-echo -en "Write (1st):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
-echo -en "Write (2nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
-echo -en "Write (3nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
+echo -en "Write (1st):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+echo -en "Write (2nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+echo -en "Write (3nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
 echo ""
-echo -en "Read (1st):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
-echo -en "Read (2nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
-echo -en "Read (3nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
+echo -en "Read (1st):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+echo -en "Read (2nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+echo -en "Read (3nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
 rm -rf $TESTFILE
 
 Splash "\n\n-------------------------------\t\tRead-only mounted\t------------------------------"
