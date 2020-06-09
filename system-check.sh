@@ -15,6 +15,7 @@ MOUNT=$(mount|egrep -iw "ext4|ext3|xfs|gfs|gfs2|btrfs"|grep -v "loop"|sort -u -t
 FS_USAGE=$(df -PTh|egrep -iw "ext4|ext3|xfs|gfs|gfs2|btrfs"|grep -v "loop"|sort -k6n|awk '!seen[$1]++')
 SERVICES="$SCRIPT_PATH/services-list.txt"
 TESTFILE="$SCRIPT_PATH/tempfile"
+DEBUG=false
 
 on_success="DONE"
 on_fail="FAIL"
@@ -247,7 +248,12 @@ Splash "\n\n-------------------------------\t\tTop 5 CPU usage\t\t--------------
 ps -eo pcpu,pmem,pid,ppid,user,stat,args | sort -k 1 -r | head -6
 
 Splash "\n\n-------------------------------\t\tSpeedtest\t------------------------------"
-test_v4
+# Debug clean
+if ( ! $DEBUG ); then
+    test_v4
+else
+	echo "Debug is enabled!"
+fi
 
 Splash "\n\n-------------------------------\t\tServices state\t\t------------------------------"
 
@@ -266,7 +272,7 @@ while read -r service; do
 done < $SERVICES
 
 space
-if confirm "List all running services?"; then
+if confirm "List all running services? (y/n or enter)"; then
 	Splash "\n\n-------------------------------Running services------------------------------"
 	systemctl list-units | grep running
 fi
