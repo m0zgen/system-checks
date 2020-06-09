@@ -127,8 +127,6 @@ chk_SvcExist() {
     fi
 }
 
-# wget --output-document=/dev/null --progress=bar:force http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin 2>&1 | progressfilt
-
 speedtest_v4() {
 	local res=$(wget -4O /dev/null -T200 $1 2>&1 | awk '/\/dev\/null/ {speed=$3 $4} END {gsub(/\(|\)/,"",speed); print speed}')
 	local region=$2
