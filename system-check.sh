@@ -127,31 +127,19 @@ chk_SvcExist() {
     fi
 }
 
-progressfilt ()
-{
-    local flag=false c count cr=$'\r' nl=$'\n'
-    while IFS='' read -d '' -rn 1 c
-    do
-        if $flag
-        then
-            printf '%s' "$c"
-        else
-            if [[ $c != $cr && $c != $nl ]]
-            then
-                count=0
-            else
-                ((count++))
-                if ((count > 1))
-                then
-                    flag=true
-                fi
-            fi
-        fi
-    done
+# wget --output-document=/dev/null --progress=bar:force http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin 2>&1 | progressfilt
+
+speedtest_v4() {
+	local res=$(wget -4O /dev/null -T200 $1 2>&1 | awk '/\/dev\/null/ {speed=$3 $4} END {gsub(/\(|\)/,"",speed); print speed}')
+	local region=$2
+	echo -en "$2\t\t${green}$res${nc}\n"
 }
 
-# https://unix.stackexchange.com/questions/43875/sending-the-output-from-dd-to-awk-sed-grep
-# https://www.shellhacks.com/disk-speed-test-read-write-hdd-ssd-perfomance-linux/
+test_v4() {
+	speedtest_v4 "http://speedtest.wdc01.softlayer.com/downloads/test10.zip" "Washington, D.C. (east)\t"
+	speedtest_v4 "http://speedtest.sjc01.softlayer.com/downloads/test10.zip" "San Jose, California (west)"
+	speedtest_v4 "http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin" "Frankfurt, DE, JP\t"
+}
 
 confirm() {
     # call with a prompt string or use a default
@@ -239,6 +227,8 @@ done
 COL3=$(echo "$COL3"|sort -k1n)
 paste  <(echo "$COL1") <(echo "$COL3") -d' '|column -t
 
+# https://unix.stackexchange.com/questions/43875/sending-the-output-from-dd-to-awk-sed-grep
+# https://www.shellhacks.com/disk-speed-test-read-write-hdd-ssd-perfomance-linux/
 Splash "\n\n-------------------------------\t\tTest disk IO\t------------------------------"
 echo -en "Write (1st):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
 echo -en "Write (2nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $8 " "  $9}')${nc}\n"
@@ -258,10 +248,8 @@ ps -eo pmem,pcpu,pid,ppid,user,stat,args | sort -k 1 -r | head -6
 Splash "\n\n-------------------------------\t\tTop 5 CPU usage\t\t------------------------------"
 ps -eo pcpu,pmem,pid,ppid,user,stat,args | sort -k 1 -r | head -6
 
-# Splash "\n\n-------------------------------\t\tSpeedtest\t------------------------------"
-# echo -en "Washington, D.C. (east):\t\t${green}$(wget --output-document=/dev/null http://speedtest.wdc01.softlayer.com/downloads/test10.zip 2>&1 | grep -o "[0-9.]\+ [KM]*B/s")${nc}\n"
-# echo -en "San Jose, California (west):\t\t${green}$(wget --output-document=/dev/null http://speedtest.sjc01.softlayer.com/downloads/test10.zip 2>&1 | grep -o "[0-9.]\+ [KM]*B/s")${nc}\n"
-# echo -en "Frankfurt, DE, JP:\t\t\t${green}$(wget --output-document=/dev/null http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin 2>&1 | grep -o "[0-9.]\+ [KM]*B/s")${nc}\n"
+Splash "\n\n-------------------------------\t\tSpeedtest\t------------------------------"
+test_v4
 
 Splash "\n\n-------------------------------\t\tServices state\t\t------------------------------"
 
