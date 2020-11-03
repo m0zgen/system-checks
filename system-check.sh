@@ -378,7 +378,7 @@ if [[ "$EXTRA" -eq "1" ]]; then
 	then
 	     cat /tmp/find_res.log | grep -v '/' -A 1
 	else
-	     Info "Status\t\t:" "OK. Not found."
+	     Info "Status:\t\t\t" "OK. Not found."
 	fi
 
 fi

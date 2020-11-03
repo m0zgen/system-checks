@@ -1,6 +1,11 @@
 ## System Checker script
 
-Works on this time only CentOS / Fedora
+Works on this time only CentOS / Fedora.
+
+* this script does not make any changes to your system
+* during operation, temporary files can be created in `/tmp` catalog
+
+## Features list
 
 * System info
   * Hostname
