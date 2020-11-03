@@ -107,10 +107,13 @@ checkDistro() {
 	# Checking distro
 	if [ -e /etc/centos-release ]; then
 	    DISTRO=`cat /etc/redhat-release | awk '{print $1,$4}'`
+	    RPM=1
 	elif [ -e /etc/fedora-release ]; then
 	    DISTRO=`cat /etc/fedora-release | awk '{print ($1,$3~/^[0-9]/?$3:$4)}'`
+	    RPM=1
 	elif [ -e /etc/os-release ]; then
 		DISTRO=`lsb_release -d | awk -F"\t" '{print $2}'`
+		RPM=0
 	else
 	    Error "Your distribution is not supported (yet)"
 	    exit 1
@@ -123,13 +126,17 @@ getDate() {
 }
 
 isSELinux() {
-	selinuxenabled
-	if [ $? -ne 0 ]
-	then
-	    Error "SELinux:\t\t" "DISABLED"
-	else
-	    Info "SELinux:\t\t" "ENABLED"
+
+	if [[ "$RPM" -eq "1" ]]; then
+		selinuxenabled
+		if [ $? -ne 0 ]
+		then
+		    Error "SELinux:\t\t" "DISABLED"
+		else
+		    Info "SELinux:\t\t" "ENABLED"
+		fi
 	fi
+
 }
 
 chk_fileExist() {
