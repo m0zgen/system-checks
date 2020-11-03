@@ -35,7 +35,9 @@ Works on this time only CentOS / Fedora
   * Top 5 memory usage processes
   * Top 5 CPU usage processes
 * Speedtest
-  * 
+  * Washington, D.C. (east)
+  * San Jose, California (west)
+  * Frankfurt, DE, JP
 * Checking systemd services status
   * You can define services list
   * Show information form default list (nginx, mongo, rsyslog and etc)
