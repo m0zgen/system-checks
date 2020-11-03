@@ -7,7 +7,7 @@
 PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 SCRIPT_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)
 
-# Notify in colors
+# Initial variables
 # ---------------------------------------------------\
 HOSTNAME=`hostname`
 SERVER_IP=`hostname -I`
@@ -18,6 +18,7 @@ TESTFILE="$SCRIPT_PATH/tempfile"
 TOTALMEM=$(free -m | awk '$1=="Mem:" {print $2}')
 DEBUG=false
 
+# Colored styles
 on_success="DONE"
 on_fail="FAIL"
 white="\e[1;37m"
@@ -55,6 +56,7 @@ space() {
 	echo -e ""
 }
 
+# Help information
 usage() {
 
 	Info "" "\nParameters:\n"
@@ -72,7 +74,7 @@ usage() {
 
 }
 
-# 
+# Checks arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -sn|--skip-network) SKIPNET=1; ;;
@@ -86,7 +88,25 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Functions
-# ---------------------------------------------------\
+# ------------------------------------------------------------------------------------------------------\
+
+## Service functions
+
+# Yes / No confirmation
+confirm() {
+    # call with a prompt string or use a default
+    read -r -p "${1:-Are you sure? [y/N]} " response
+    case "$response" in
+        [yY][eE][sS]|[yY]) 
+            true
+            ;;
+        *)
+            false
+            ;;
+    esac
+}
+
+# Check is current user is root
 isRoot() {
 	if [ $(id -u) -ne 0 ]; then
 		Error "You must be root user to continue"
@@ -103,6 +123,7 @@ isRoot() {
 	fi
 }
 
+# Checks supporting distros
 checkDistro() {
 	# Checking distro
 	if [ -e /etc/centos-release ]; then
@@ -125,6 +146,7 @@ getDate() {
 	date '+%d-%m-%Y_%H-%M-%S'
 }
 
+# SELinux status
 isSELinux() {
 
 	if [[ "$RPM" -eq "1" ]]; then
@@ -139,6 +161,7 @@ isSELinux() {
 
 }
 
+# If file exist true / false
 chk_fileExist() {
 	PASSED=$1
 
@@ -155,6 +178,7 @@ chk_fileExist() {
 	fi
 }
 
+# Unit services status
 chk_SvsStatus() {
 	systemctl is-active --quiet $1 && Info "$1: " "Running" || Error "$1: " "Stopped"
 }
@@ -168,6 +192,9 @@ chk_SvcExist() {
     fi
 }
 
+## Functional / Test functions
+
+# Collect CPU information
 cpu_info() {
 	echo -en "Model name:\t\t${green}$(lscpu | grep -oP 'Model name:\s*\K.+')${nc}\n"
 	echo -en "Vendor ID:\t\t${green}$(lscpu | grep -oP 'Vendor ID:\s*\K.+')${nc}\n"
@@ -178,6 +205,7 @@ cpu_info() {
 	Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
 }
 
+# Test HDD
 test_disk() {
 
 	if [[ "$SKIPDISK" -eq "1" ]]; then
@@ -195,6 +223,7 @@ test_disk() {
 
 }
 
+# HDD usage
 disk_usage() {
 	echo -e "( 0-90% = OK/HEALTHY, 90-95% = WARNING, 95-100% = CRITICAL )"
 	echo -e "$d$d"
@@ -221,6 +250,7 @@ disk_usage() {
 	# https://www.shellhacks.com/disk-speed-test-read-write-hdd-ssd-perfomance-linux/
 }
 
+# IPv4 speed tests
 speedtest_v4() {
 	local res=$(wget -4O /dev/null -T200 $1 2>&1 | awk '/\/dev\/null/ {speed=$3 $4} END {gsub(/\(|\)/,"",speed); print speed}')
 	local region=$2
@@ -239,6 +269,7 @@ test_v4() {
 	fi
 }
 
+# General system information
 system_info() {
 	checkDistro
 	Info "Hostname:\t\t" $HOSTNAME
@@ -255,6 +286,7 @@ system_info() {
 	echo -en "Current Load Average:\t${green}$(uptime|grep -o "load average.*"|awk '{print $3" " $4" " $5}')${nc}"
 }
 
+# Memory info
 mem_info() {
 	Info "Total memory:\t\t" "${TOTALMEM}Mb"
 	Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
@@ -268,27 +300,16 @@ mem_info() {
 	fi
 }
 
+# Boot info
 boot_info() {
 	Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
 	echo -en "Last Reboot:\t\t${green}$(who -b | awk '{print $3,$4,$5}')${nc}"
 	echo -en "\nUptime:\t\t\t${green}`awk '{a=$1/86400;b=($1%86400)/3600;c=($1%3600)/60} {printf("%d days, %d hour %d min\n",a,b,c)}' /proc/uptime`${nc}"
 }
 
-confirm() {
-    # call with a prompt string or use a default
-    read -r -p "${1:-Are you sure? [y/N]} " response
-    case "$response" in
-        [yY][eE][sS]|[yY]) 
-            true
-            ;;
-        *)
-            false
-            ;;
-    esac
-}
-
 # Actions
-# ---------------------------------------------------\
+# ------------------------------------------------------------------------------------------------------\
+
 space
 Splash "-------------------------------\t\tSystem Information\t----------------------------"
 
