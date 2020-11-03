@@ -109,6 +109,8 @@ checkDistro() {
 	    DISTRO=`cat /etc/redhat-release | awk '{print $1,$4}'`
 	elif [ -e /etc/fedora-release ]; then
 	    DISTRO=`cat /etc/fedora-release | awk '{print ($1,$3~/^[0-9]/?$3:$4)}'`
+	elif [ -e /etc/os-release ]; then
+		DISTRO=`lsb_release -d | awk -F"\t" '{print $2}'`
 	else
 	    Error "Your distribution is not supported (yet)"
 	    exit 1
