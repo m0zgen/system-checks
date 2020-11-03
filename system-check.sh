@@ -338,7 +338,7 @@ if [[ "$EXTRA" -eq "1" ]]; then
 	space
 	cat /etc/passwd | grep bash | awk -F: '{ print $1}'
 
-	Splash "\n\n-------------------------------\t\tUser process\t------------------------------"
+	Splash "\n\n-------------------------------\t\tUsers from processes\t------------------------------"
 	space
 	ps -ef | awk '{print $1}' | sort | uniq | grep -v 'UID'
 
@@ -373,7 +373,13 @@ if [[ "$EXTRA" -eq "1" ]]; then
 	Info "Status\t\t\t" "Find..."
 	# find / -nouser -o -nogroup -exec ls -l {} \;
 	find / -xdev -nouser -o -nogroup -exec ls {} \; > /tmp/find_res.log
-	cat /tmp/find_res.log | grep -v '/' -A 1
+
+	if [ -s /tmp/find_res.log ]
+	then
+	     cat /tmp/find_res.log | grep -v '/' -A 1
+	else
+	     Info "Status\t\t:" "OK. Not found."
+	fi
 
 fi
 
