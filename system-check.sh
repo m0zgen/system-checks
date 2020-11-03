@@ -15,6 +15,7 @@ MOUNT=$(mount|egrep -iw "ext4|ext3|xfs|gfs|gfs2|btrfs"|grep -v "loop"|sort -u -t
 FS_USAGE=$(df -PTh|egrep -iw "ext4|ext3|xfs|gfs|gfs2|btrfs"|grep -v "loop"|sort -k6n|awk '!seen[$1]++')
 SERVICES="$SCRIPT_PATH/services-list.txt"
 TESTFILE="$SCRIPT_PATH/tempfile"
+TOTALMEM=$(free -m | awk '$1=="Mem:" {print $2}')
 DEBUG=false
 
 on_success="DONE"
@@ -53,6 +54,36 @@ Splash() {
 space() { 
 	echo -e ""
 }
+
+usage() {
+
+	Info "" "\nParameters:\n"
+	echo -e "-sn - Skip speedtest\n
+-sd - Skip disk test\n
+-ss - Show all running services\n
+-e - Extra info (Bash users, Who logged, All running services, Listen ports, UnOwned files, User list from processes)
+	"
+
+	Info "" "Usage:"
+	echo -e "You can use this script with several parameters:"
+	echo -e "./system-check.sh -sn -sd -e"
+	echo -e "./system-check.sh -ss"
+	exit 1
+
+}
+
+# 
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -sn|--skip-network) SKIPNET=1; ;;
+		-ss|--skip-services) SKIPSERVICES=1; ;;
+        -sd|--skip-disk) SKIPDISK=1 ;;
+		-e|--extra) EXTRA=1 ;;
+		-h|--help) usage ;;	
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+    shift
+done
 
 # Functions
 # ---------------------------------------------------\
@@ -135,9 +166,15 @@ speedtest_v4() {
 }
 
 test_v4() {
-	speedtest_v4 "http://speedtest.wdc01.softlayer.com/downloads/test10.zip" "Washington, D.C. (east)\t"
-	speedtest_v4 "http://speedtest.sjc01.softlayer.com/downloads/test10.zip" "San Jose, California (west)"
-	speedtest_v4 "http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin" "Frankfurt, DE, JP\t"
+
+	if [[ "$SKIPNET" -eq "1" ]]; then
+		Info "" "Network test was skipped"
+	else
+		Info "Status\t\t\t" "Started..."
+		speedtest_v4 "http://speedtest.wdc01.softlayer.com/downloads/test10.zip" "Washington, D.C. (east)\t"
+		speedtest_v4 "http://speedtest.sjc01.softlayer.com/downloads/test10.zip" "San Jose, California (west)"
+		speedtest_v4 "http://speedtest.frankfurt.linode.com/100MB-frankfurt.bin" "Frankfurt, DE, JP\t"
+	fi
 }
 
 confirm() {
@@ -161,6 +198,7 @@ checkDistro
 Info "Hostname:\t\t" $HOSTNAME
 Info "Distro:\t\t\t" "${DISTRO}"
 Info "IP:\t\t\t" $SERVER_IP
+Info "External IP:\t\t" $(curl -s ifconfig.co)
 
 isRoot
 isSELinux
@@ -170,18 +208,6 @@ Info "Architecture:\t\t" `arch`
 Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
 echo -en "Current Load Average:\t${green}$(uptime|grep -o "load average.*"|awk '{print $3" " $4" " $5}')${nc}"
 
-Splash "\n\n-------------------------------\t\tUsage of CPU/Memory\t------------------------------"
-Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
-
-if free | awk '/^Swap:/ {exit !$2}'; then
-    Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
-else
-    Error "Swap Usage:\t\t" "swap does not exist"
-fi
-
-
-Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
-
 Splash "\n\n-------------------------------\t\tCPU Information\t\t------------------------------"
 echo -en "Model name:\t\t${green}$(lscpu | grep -oP 'Model name:\s*\K.+')${nc}\n"
 echo -en "Vendor ID:\t\t${green}$(lscpu | grep -oP 'Vendor ID:\s*\K.+')${nc}\n"
@@ -189,6 +215,20 @@ Info "CPU Cores\t\t" `awk -F: '/model name/ {core++} END {print core}' /proc/cpu
 Info "CPU MHz:\t\t" `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
 Info "Hypervisor vendor:\t" `lscpu | grep -oP 'Hypervisor vendor:\s*\K.+'`
 Info "Virtualization:\t\t" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
+Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
+
+Splash "\n\n-------------------------------\t\tMemory Information\t\t------------------------------"
+
+Info "Total memory:\t\t" "${TOTALMEM}Mb"
+Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
+space
+if free | awk '/^Swap:/ {exit !$2}'; then
+	TOTALSWAP=$(free -m | awk '$1=="Swap:" {print $2}')
+	Info "Total swap:\t\t" "${TOTALSWAP}Mb"
+    Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
+else
+    Error "Swap Usage:\t\t" "swap does not exist"
+fi
 
 Splash "\n\n-------------------------------\t\tBoot Information\t------------------------------"
 Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
@@ -229,14 +269,19 @@ paste  <(echo "$COL1") <(echo "$COL3") -d' '|column -t
 # https://unix.stackexchange.com/questions/43875/sending-the-output-from-dd-to-awk-sed-grep
 # https://www.shellhacks.com/disk-speed-test-read-write-hdd-ssd-perfomance-linux/
 Splash "\n\n-------------------------------\t\tTest disk IO\t------------------------------"
-echo -en "Write (1st):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
-echo -en "Write (2nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
-echo -en "Write (3nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
-echo ""
-echo -en "Read (1st):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
-echo -en "Read (2nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
-echo -en "Read (3nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
-rm -rf $TESTFILE
+
+if [[ "$SKIPDISK" -eq "1" ]]; then
+		Info "" "Disk test was skipped"
+else
+	echo -en "Write (1st):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+	echo -en "Write (2nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+	echo -en "Write (3nd):\t\t${green}$(dd if=/dev/zero of=$TESTFILE bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+	echo ""
+	echo -en "Read (1st):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+	echo -en "Read (2nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+	echo -en "Read (3nd):\t\t${green}$(dd if=$TESTFILE of=/dev/null bs=1M count=1024 |& awk '/copied/ {print $0}' | sed 's:.*,::')${nc}\n"
+	rm -rf $TESTFILE
+fi
 
 Splash "\n\n-------------------------------\t\tRead-only mounted\t------------------------------"
 echo "$MOUNT"|grep -w \(ro\) && Info "\n.....Read Only file system[s] found"|| Info "No read-only file system[s] found. "
@@ -247,6 +292,7 @@ ps -eo pmem,pcpu,pid,ppid,user,stat,args | sort -k 1 -r | head -6
 Splash "\n\n-------------------------------\t\tTop 5 CPU usage\t\t------------------------------"
 ps -eo pcpu,pmem,pid,ppid,user,stat,args | sort -k 1 -r | head -6
 
+
 Splash "\n\n-------------------------------\t\tSpeedtest\t------------------------------"
 # Debug clean
 if ( ! $DEBUG ); then
@@ -254,6 +300,7 @@ if ( ! $DEBUG ); then
 else
 	echo "Debug is enabled!"
 fi
+
 
 if [[ -f $SERVICES ]]; then
 
@@ -275,8 +322,51 @@ if [[ -f $SERVICES ]]; then
 	
 fi
 
-space
-if confirm "List all running services? (y/n or enter)"; then
-	Splash "\n\n-------------------------------Running services------------------------------"
-	systemctl list-units | grep running
+if [[ "$SKIPSERVICES" -eq "1" ]]; then
+	if confirm "List all running services? (y/n or enter)"; then
+		Splash "\n\n-------------------------------Running services------------------------------"
+		space
+		systemctl list-units | grep running
+	fi
 fi
+
+
+
+if [[ "$EXTRA" -eq "1" ]]; then
+	
+	Splash "\n\n-------------------------------\t\tBash users\t------------------------------"
+	space
+	cat /etc/passwd | grep bash | awk -F: '{ print $1}'
+
+	Splash "\n\n-------------------------------\t\tUser process\t------------------------------"
+	space
+	ps -u | awk '{ print $1}' | uniq | grep -v 'USER'
+
+	Splash "\n\n-------------------------------\t\tLogged users\t------------------------------"
+	space
+	w -h
+
+	Splash "\n\n-------------------------------\t\tListen ports\t------------------------------"
+	space
+	if ! command -v netstat &> /dev/null
+	then
+	    Warn "" "NETSTAT could not be found"
+	else
+		netstat -tulpn | grep 'LISTEN'
+	fi
+
+	Splash "\n\n-------------------------------\t\tAll running services\t----------------------"
+	space
+	systemctl list-units | grep running
+
+	Splash "\n\n-------------------------------\t\tUnowned files\t----------------------"
+	space
+	Info "Status\t\t\t" "Find..."
+	# find / -nouser -o -nogroup -exec ls -l {} \;
+	find / -xdev -nouser -o -nogroup -exec ls {} \; > /tmp/find_res.log
+	cat /tmp/find_res.log | grep -v '/' -A 1
+
+fi
+
+
+
