@@ -375,8 +375,6 @@ if [[ "$EXTRA" -eq "1" ]]; then
 	# ps -ejH
 	ps axjf
 
-
-
 	Splash "\n\n-------------------------------\t\tUnowned files\t----------------------"
 	space
 	Info "Status\t\t\t" "Find..."
