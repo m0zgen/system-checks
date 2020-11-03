@@ -340,7 +340,7 @@ if [[ "$EXTRA" -eq "1" ]]; then
 
 	Splash "\n\n-------------------------------\t\tUser process\t------------------------------"
 	space
-	ps -u | awk '{ print $1}' | uniq | grep -v 'USER'
+	ps -ef | awk '{print $1}' | sort | uniq | grep -v 'UID'
 
 	Splash "\n\n-------------------------------\t\tLogged users\t------------------------------"
 	space
@@ -358,6 +358,15 @@ if [[ "$EXTRA" -eq "1" ]]; then
 	Splash "\n\n-------------------------------\t\tAll running services\t----------------------"
 	space
 	systemctl list-units | grep running
+
+	Splash "\n\n-------------------------------\t\tAll running processes\t----------------------"
+	space
+	# ps -A | awk '{print $4}' | grep -v 'CMD' | uniq | sort
+	# as tree
+	# ps -ejH
+	ps axjf
+
+
 
 	Splash "\n\n-------------------------------\t\tUnowned files\t----------------------"
 	space
