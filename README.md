@@ -86,7 +86,7 @@ After clone go to folder and run script:
 cd system-checks && ./system-checks.sh
 ```
 
-## Visit repository
+## Repository
 
 * [https://github.com/m0zgen/system-checks](https://github.com/m0zgen/system-checks)
 
