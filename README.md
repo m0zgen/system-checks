@@ -68,9 +68,27 @@ You can use this script with several parameters:
 ./system-check.sh -ss
 ```
 
-## Run directly
+## How to run?
+
+You can run script directly:
 ```bash
 wget -O - https://raw.githubusercontent.com/m0zgen/system-checks/master/system-check.sh | bash
+```
+
+Or you can clone repository:
+
+```bash
+git clone https://github.com/m0zgen/system-checks.git
+```
+
+After clone `cd` ti script folder:
+```bash
+cd system-checks
+```
+
+and run:
+```bash
+./system-checks.sh
 ```
 
 ## Description
@@ -80,3 +98,7 @@ wget -O - https://raw.githubusercontent.com/m0zgen/system-checks/master/system-c
 ## Thanks
 
 * https://github.com/SimplyLinuxFAQ/health-check-script
+
+## Visit repository
+
+* https://github.com/m0zgen/system-checks
