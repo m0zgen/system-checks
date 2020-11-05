@@ -86,14 +86,16 @@ After clone go to folder and run script:
 cd system-checks && ./system-checks.sh
 ```
 
+## Visit repository
+
+* [https://github.com/m0zgen/system-checks](https://github.com/m0zgen/system-checks)
+
 ## Description
 
-* https://sys-adm.in/sections/os-nix/881-bash-sbor-informatsii-o-sisteme.html
+* [https://sys-adm.in/sections/os-nix/881-bash-sbor-informatsii-o-sisteme.html](https://sys-adm.in/sections/os-nix/881-bash-sbor-informatsii-o-sisteme.html)
 
 ## Thanks
 
-* https://github.com/SimplyLinuxFAQ/health-check-script
+* [https://github.com/SimplyLinuxFAQ/health-check-script](https://github.com/SimplyLinuxFAQ/health-check-script)
 
-## Visit repository
 
-* https://github.com/m0zgen/system-checks
