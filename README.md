@@ -83,7 +83,7 @@ git clone https://github.com/m0zgen/system-checks.git
 
 After clone go to folder and run script:
 ```bash
-cd system-checks && ./system-checks.sh
+cd system-checks && ./system-check.sh
 ```
 
 ## Repository
