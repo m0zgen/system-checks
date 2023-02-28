@@ -201,8 +201,11 @@ cpu_info() {
 	Info "CPU Cores\t\t" `awk -F: '/model name/ {core++} END {print core}' /proc/cpuinfo`
 	Info "CPU MHz:\t\t" `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
 	Info "Hypervisor vendor:\t" `lscpu | grep -oP 'Hypervisor vendor:\s*\K.+'`
-	Info "Virtualization:\t\t" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
-	Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
+	if [[ "$RPM" -eq 1 ]]; then
+		Info "Virtualization:\t\t" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
+	fi
+	Info "CPU Usage:\t\t" `awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) "%"; }' \
+<(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat)`
 }
 
 # Test HDD
@@ -275,7 +278,7 @@ system_info() {
 	Info "Hostname:\t\t" $HOSTNAME
 	Info "Distro:\t\t\t" "${DISTRO}"
 	Info "IP:\t\t\t" $SERVER_IP
-	Info "External IP:\t\t" $(curl -s ifconfig.co)
+	Info "External IP:\t\t" $(curl -s -4 icanhazip.com)
 
 	isRoot
 	isSELinux
