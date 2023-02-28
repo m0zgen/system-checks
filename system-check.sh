@@ -185,7 +185,7 @@ chk_SvsStatus() {
 
 chk_SvcExist() {
     local n=$1
-    if [[ $(systemctl list-units --all -t service --full --no-legend "$n.service" | cut -f1 -d' ') == $n.service ]]; then
+    if [[ $(systemctl list-units --all -t service | awk {'print $1'} | grep $n.service) == $n.service ]]; then
         return 0
     else
         return 1
@@ -204,8 +204,7 @@ cpu_info() {
 	if [[ "$RPM" -eq 1 ]]; then
 		Info "Virtualization:\t\t" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
 	fi
-	Info "CPU Usage:\t\t" `awk '{u=$2+$4; t=$2+$4+$5; if (NR==1){u1=u; t1=t;} else print ($2+$4-u1) * 100 / (t-t1) "%"; }' \
-<(grep 'cpu ' /proc/stat) <(sleep 1;grep 'cpu ' /proc/stat)`
+	Info "CPU Usage:\t\t" `cat /proc/stat | awk '/cpu/{printf("%.2f%%\n"), ($2+$4)*100/($2+$4+$5)}' |  awk '{print $0}' | head -1`
 }
 
 # Test HDD
@@ -292,12 +291,12 @@ system_info() {
 # Memory info
 mem_info() {
 	Info "Total memory:\t\t" "${TOTALMEM}Mb"
-	Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%"), $3/$2*100}'`
+	Info "Memory Usage:\t\t" `free | awk '/Mem/{printf("%.2f%%"), $3/$2*100}'`
 	space
 	if free | awk '/^Swap:/ {exit !$2}'; then
 		TOTALSWAP=$(free -m | awk '$1=="Swap:" {print $2}')
 		Info "Total swap:\t\t" "${TOTALSWAP}Mb"
-	    Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%"), $3/$2*100}'`
+	    Info "Swap Usage:\t\t" `free | awk '/Swap/{printf("%.2f%%"), $3/$2*100}'`
 	else
 	    Error "Swap Usage:\t\t" "swap does not exist"
 	fi
