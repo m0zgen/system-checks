@@ -185,7 +185,8 @@ chk_SvsStatus() {
 
 chk_SvcExist() {
     local n=$1
-    if [[ $(systemctl list-units --all -t service | awk {'print $1'} | grep $n.service) == $n.service ]]; then
+    # systemctl list-units --all -t service | awk {'print $1'} | grep $n.service
+    if [[ $(systemctl list-unit-files --type service | awk {'print $1'} | grep $n.service) == $n.service ]]; then
         return 0
     else
         return 1
