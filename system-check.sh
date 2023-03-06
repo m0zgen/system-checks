@@ -215,7 +215,8 @@ cpu_info() {
     echo -en "Model name:\t\t${green}$(lscpu | grep -oP 'Model name:\s*\K.+')${nc}\n"
     echo -en "Vendor ID:\t\t${green}$(lscpu | grep -oP 'Vendor ID:\s*\K.+')${nc}\n"
     Info "CPU Cores\t\t" `awk -F: '/model name/ {core++} END {print core}' /proc/cpuinfo`
-    Info "CPU MHz:\t\t" `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
+    # Info "CPU MHz:\t\t" `lscpu | grep -oP 'CPU MHz:\s*\K.+'`
+    Info "CPU MHz:\t\t" `cat /proc/cpuinfo | grep "MHz" | head -1 | awk '{print $4}'`
     Info "Hypervisor vendor:\t" `lscpu | grep -oP 'Hypervisor vendor:\s*\K.+'`
     if [[ "$RPM" -eq 1 ]]; then
         Info "Virtualization:\t\t" `lscpu | grep -oP 'Virtualization:\s*\K.+'`
