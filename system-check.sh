@@ -303,6 +303,7 @@ system_info() {
     echo -en "eBPF:\t\t\t${green}$(isEBPF)${nc}\n"
     Info "Architecture:\t\t" `arch`
     Info "Active User:\t\t" `w | cut -d ' ' -f1 | grep -v USER | xargs -n1`
+    Info "Locale:\t\t\t" `locale | head -1 | sed 's/^[^=:]*[=:]//'`
     echo -en "Current Load Average:\t${green}$(uptime|grep -o "load average.*"|awk '{print $3" " $4" " $5}')${nc}"
 }
 
